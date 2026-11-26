@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "description": "Create summaries; never delete source files.",
+  "rules": [
+    {
+      "id": "never-delete",
+      "effect": "deny",
+      "description": "Deletion is never permitted",
+      "match": {
+        "operations": [
+          "delete"
+        ]
+      }
+    },
+    {
+      "id": "read-docs",
+      "effect": "allow",
+      "match": {
+        "tools": [
+          "documents"
+        ],
+        "operations": [
+          "read"
+        ],
+        "resources": [
+          "docs/**"
+        ]
+      }
+    },
+    {
+      "id": "write-summaries",
+      "effect": "allow",
+      "match": {
+        "tools": [
+          "documents"
+        ],
+        "operations": [
+          "create"
+        ],
+        "resources": [
+          "summaries/**"
+        ]
+      }
+    }
+  ]
+}

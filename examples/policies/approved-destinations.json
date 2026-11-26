@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "description": "Outbound transfer allow-list.",
+  "rules": [
+    {
+      "id": "no-restricted-data",
+      "effect": "deny",
+      "description": "Restricted data never leaves",
+      "match": {
+        "operations": [
+          "external_transfer"
+        ],
+        "data_classifications": [
+          "restricted"
+        ]
+      }
+    },
+    {
+      "id": "send-to-partner",
+      "effect": "allow",
+      "match": {
+        "tools": [
+          "transfer"
+        ],
+        "operations": [
+          "external_transfer"
+        ],
+        "destination_domains": [
+          "partner.example.com",
+          "*.files.example.com"
+        ]
+      }
+    }
+  ]
+}

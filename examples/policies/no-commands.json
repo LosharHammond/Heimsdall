@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "description": "No command execution, ever.",
+  "budget": {
+    "max_allowed_actions": 200,
+    "window_seconds": 3600
+  },
+  "rules": [
+    {
+      "id": "no-commands",
+      "effect": "deny",
+      "description": "Command execution is never permitted",
+      "match": {
+        "operations": [
+          "command_execution"
+        ]
+      }
+    },
+    {
+      "id": "read-docs",
+      "effect": "allow",
+      "match": {
+        "tools": [
+          "documents"
+        ],
+        "operations": [
+          "read"
+        ],
+        "resources": [
+          "docs/**"
+        ]
+      }
+    }
+  ]
+}

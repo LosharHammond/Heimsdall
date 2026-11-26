@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "description": "Policy used by `npm run demo`.",
+  "classifications": [
+    {
+      "resources": [
+        "docs/**",
+        "summaries/**"
+      ],
+      "level": "internal"
+    },
+    {
+      "resources": [
+        "reports/**"
+      ],
+      "level": "confidential"
+    },
+    {
+      "resources": [
+        "docs/finance/**"
+      ],
+      "level": "restricted"
+    }
+  ],
+  "rules": [
+    {
+      "id": "no-commands",
+      "effect": "deny",
+      "match": {
+        "operations": [
+          "command_execution"
+        ]
+      }
+    },
+    {
+      "id": "no-restricted-transfer",
+      "effect": "deny",
+      "match": {
+        "operations": [
+          "external_transfer"
+        ],
+        "data_classifications": [
+          "restricted"
+        ]
+      }
+    },
+    {
+      "id": "delete-needs-admin",
+      "effect": "require_approval",
+      "match": {
+        "tools": [
+          "documents"
+        ],
+        "operations": [
+          "delete"
+        ],
+        "resources": [
+          "docs/**"
+        ]
+      },
+      "approval": {
+        "required_role": "admin",
+        "ttl_seconds": 900
+      }
+    },
+    {
+      "id": "read-docs",
+      "effect": "allow",
+      "match": {
+        "tools": [
+          "documents"
+        ],
+        "operations": [
+          "read"
+        ],
+        "resources": [
+          "docs/**"
+        ]
+      }
+    },
+    {
+      "id": "write-summaries",
+      "effect": "allow",
+      "match": {
+        "tools": [
+          "documents"
+        ],
+        "operations": [
+          "create"
+        ],
+        "resources": [
+          "summaries/**"
+        ]
+      }
+    },
+    {
+      "id": "send-to-partner",
+      "effect": "allow",
+      "match": {
+        "tools": [
+          "transfer"
+        ],
+        "operations": [
+          "external_transfer"
+        ],
+        "destination_domains": [
+          "partner.example.com"
+        ]
+      }
+    }
+  ]
+}

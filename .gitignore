@@ -1,0 +1,17 @@
+node_modules
+dist
+.data
+.env
+.env.local
+*.log
+demo/.workspace
+laptop-sandbox
+server.log
+connect-laptop.bat
+.tmp-*
+.claude/
+Claude outputs/
+.env.*
+!.env.example
+__pycache__/
+.pytest_cache/

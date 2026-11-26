@@ -1,0 +1,47 @@
+# Render Blueprint (example). UNVERIFIED: this file has not been deployed. Check Render's current docs,
+# plans and pricing before use. Any host that runs a Docker container + managed PostgreSQL works the same way.
+services:
+  - type: web
+    name: kenuxa-heimdall
+    runtime: docker
+    plan: starter            # choose a plan after reading the provider's current pricing
+    healthCheckPath: /readyz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_URL
+        sync: false          # set to your https:// URL, e.g. https://guardian.example.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: heimdall-db
+          property: connectionString
+      - key: DATABASE_SSL
+        value: require       # remove if the provider's internal connection string does not use TLS
+      - key: TRUST_PROXY
+        value: "1"           # Render terminates TLS and sets X-Forwarded-For
+      - key: AUTO_MIGRATE
+        value: "1"           # safe for a single instance; see docs/DEPLOYMENT.md for multi-instance
+      - key: POLICY_SIGNING_KEY
+        sync: false          # secret: required for offline policy bundles
+  # Background worker (same image). UNVERIFIED like the rest of this file.
+  - type: worker
+    name: heimdall-worker
+    runtime: docker
+    plan: starter
+    dockerCommand: node dist/server/worker.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_URL
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: heimdall-db
+          property: connectionString
+      - key: DATABASE_SSL
+        value: require
+      - key: AUTO_MIGRATE
+        value: "0"
+databases:
+  - name: heimdall-db
+    plan: basic-256mb        # example name only; verify current plan names

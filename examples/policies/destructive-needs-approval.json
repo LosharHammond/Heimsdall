@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "description": "Deletes wait for human approval.",
+  "rules": [
+    {
+      "id": "delete-needs-admin",
+      "effect": "require_approval",
+      "match": {
+        "tools": [
+          "*"
+        ],
+        "operations": [
+          "delete"
+        ]
+      },
+      "approval": {
+        "required_role": "admin",
+        "ttl_seconds": 900
+      }
+    },
+    {
+      "id": "read-docs",
+      "effect": "allow",
+      "match": {
+        "tools": [
+          "documents"
+        ],
+        "operations": [
+          "read"
+        ],
+        "resources": [
+          "docs/**"
+        ]
+      }
+    },
+    {
+      "id": "update-docs",
+      "effect": "allow",
+      "match": {
+        "tools": [
+          "documents"
+        ],
+        "operations": [
+          "update"
+        ],
+        "resources": [
+          "docs/**"
+        ]
+      }
+    }
+  ]
+}

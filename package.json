@@ -1,0 +1,60 @@
+{
+  "name": "kenuxa-heimdall",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AI Agent Permission and Behavior Firewall - first working release",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "concurrently -n api,web \"tsx watch src/server/main.ts\" \"vite\"",
+    "build": "vite build && tsc -p tsconfig.server.json",
+    "start": "node dist/server/main.js",
+    "migrate": "tsx src/server/migrate-cli.ts",
+    "retention": "tsx src/server/retention-cli.ts",
+    "demo": "tsx demo/run-demo.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.server.json",
+    "test": "vitest run",
+    "test:pg": "tsx tests/run-on-postgres.ts",
+    "smoke:prod": "npm run build && tsx tests/prod-smoke.ts",
+    "seed": "tsx demo/seed-showcase.ts",
+    "connect": "tsx connector/laptop.ts",
+    "companion": "tsx src/companion/main.ts",
+    "verify-export": "tsx scripts/verify-export.ts",
+    "build:installer": "tsx scripts/build-installer.ts",
+    "mcp": "tsx src/integrations/mcp/server.ts",
+    "worker": "tsx src/server/worker.ts"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.10",
+    "@hono/node-server": "^2.1.5",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@types/nodemailer": "^8.0.2",
+    "@types/qrcode": "^1.5.6",
+    "@types/web-push": "^3.6.4",
+    "hono": "^4.13.13",
+    "nodemailer": "^7.0.13",
+    "pg": "^8.23.1",
+    "qrcode": "^1.5.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router": "^7.18.4",
+    "web-push": "^3.6.7",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.6",
+    "embedded-postgres": "^18.4.0-beta.17",
+    "postject": "^1.0.0-alpha.6",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
+  }
+}

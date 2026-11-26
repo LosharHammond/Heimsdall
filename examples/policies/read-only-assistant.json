@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "description": "Read-only access to the docs/ namespace.",
+  "rules": [
+    {
+      "id": "read-docs",
+      "effect": "allow",
+      "description": "Read approved documents",
+      "match": {
+        "tools": [
+          "documents"
+        ],
+        "operations": [
+          "read"
+        ],
+        "resources": [
+          "docs/**"
+        ]
+      }
+    }
+  ]
+}
