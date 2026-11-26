@@ -9,6 +9,8 @@ laptop-sandbox
 server.log
 connect-laptop.bat
 .tmp-*
+.vercel
+.pgtmp.mjs
 .claude/
 Claude outputs/
 .env.*

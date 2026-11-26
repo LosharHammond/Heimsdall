@@ -6,6 +6,13 @@ const schema = z.object({
   APP_URL: z.string().url().default("http://localhost:5173"),
   DATABASE_URL: z.string().optional(),
   DATABASE_SSL: z.enum(["require", "disable"]).optional(),
+  /** Keep Heimdall's tables in their own Postgres schema, e.g. "heimdall" inside a shared Supabase project. Never "public" there:
+   *  Supabase publishes the public schema through its REST API. */
+  DATABASE_SCHEMA: z.string().regex(/^[a-z_][a-z0-9_]{0,40}$/).optional(),
+  /** Connections per server process. Keep it small (2-3) on Vercel, where many short-lived copies can run at once. */
+  DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
+  /** Shared secret for the scheduled-jobs endpoint (/api/cron/tick). Vercel Cron and the GitHub Actions workflow send it as a Bearer token. */
+  CRON_SECRET: z.string().min(16).optional(),
   DATA_DIR: z.string().default(".data"),
   SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(24 * 30).default(168),
   RETENTION_INTERVAL_MINUTES: z.coerce.number().int().min(0).default(1440),

@@ -1,4 +1,5 @@
 import { createReadStream } from "node:fs";
+import { timingSafeEqual } from "node:crypto";
 import { Readable } from "node:stream";
 import { existsSync, readFileSync } from "node:fs";
 import { Hono, type Context, type Next } from "hono";
@@ -122,6 +123,17 @@ export function createApp(ctx: Ctx, opts: AppOptions = {}) {
       return c.json({ status: "unavailable", database: "unreachable" }, 503);
     }
   });
+
+  // ---- scheduled jobs (Vercel Cron / GitHub Actions). Off unless CRON_SECRET is set. ----
+  const cron = async (c: Context) => {
+    const secret = ctx.config.CRON_SECRET;
+    const given = (c.req.header("authorization") ?? "").replace(/^Bearer\s+/i, "");
+    if (!secret || !safeEqual(given, secret)) return c.json({ error: { code: "UNAUTHORIZED", message: "Missing or wrong cron secret" } }, 401);
+    const { tick } = await import("./jobs.js");
+    return c.json({ ok: true, ran: await tick(ctx, { retentionMinutes: ctx.config.RETENTION_INTERVAL_MINUTES || 1440 }) });
+  };
+  app.get("/api/cron/tick", cron);
+  app.post("/api/cron/tick", cron);
 
   // ---- session auth + CSRF for /api ----
   const csrf = async (c: Context, next: Next) => {
@@ -515,12 +527,17 @@ export function createApp(ctx: Ctx, opts: AppOptions = {}) {
 
 export { runMigrations };
 
+function safeEqual(a: string, b: string) {
+  const x = Buffer.from(a), y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
+}
+
 
 const FALLBACK_APPS = [
   { client_id: "accounts", name: "Kenuxa Accounts", home_url: "https://kenuxa-accounts.vercel.app", icon_url: null },
   { client_id: "bask", name: "Kenuxa Bask", home_url: "https://kenuxabask.vercel.app", icon_url: null },
   { client_id: "heimdall", name: "Kenuxa Heimdall", home_url: "/", icon_url: null },
-  { client_id: "sourcebook", name: "Kenuxa Sourcebook", home_url: "https://kenuxa-sourcebook.onrender.com", icon_url: null },
+  { client_id: "sourcebook", name: "Kenuxa Sourcebook", home_url: "https://kenuxa-sourcebook.vercel.app", icon_url: null },
 ];
 let appsCache: { at: number; apps: unknown[] } = { at: 0, apps: [] };
 async function kenuxaApps(ctx: Ctx) {

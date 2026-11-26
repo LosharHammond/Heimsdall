@@ -67,6 +67,12 @@ npm run build
 npm start            # serves API + built dashboard on :8787
 ```
 
+## Putting it online for free
+
+Vercel (dashboard and API) + Supabase (database, in its own `heimdall` schema) + GitHub Actions (jobs every 30 minutes).
+Step by step: [docs/DEPLOY-FREE.md](docs/DEPLOY-FREE.md). Build command: `npm run build:vercel`.
+`render.yaml` is kept for paid Render plans only; Render's free plan sleeps after 15 minutes and its free database expires after 30 days.
+
 ## Scripts
 
 | Command | What it does |

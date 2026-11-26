@@ -24,7 +24,8 @@
     "verify-export": "tsx scripts/verify-export.ts",
     "build:installer": "tsx scripts/build-installer.ts",
     "mcp": "tsx src/integrations/mcp/server.ts",
-    "worker": "tsx src/server/worker.ts"
+    "worker": "tsx src/server/worker.ts",
+    "build:vercel": "tsx scripts/build-vercel.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.10",
@@ -33,6 +34,7 @@
     "@types/nodemailer": "^8.0.2",
     "@types/qrcode": "^1.5.6",
     "@types/web-push": "^3.6.4",
+    "@vercel/functions": "^3.11.4",
     "hono": "^4.13.13",
     "nodemailer": "^7.0.13",
     "pg": "^8.23.1",
@@ -51,6 +53,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "concurrently": "^10.0.6",
     "embedded-postgres": "^18.4.0-beta.17",
+    "esbuild": "^0.28.2",
     "postject": "^1.0.0-alpha.6",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",

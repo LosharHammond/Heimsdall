@@ -12,8 +12,11 @@ export interface Db extends Queryable {
   close(): Promise<void>;
 }
 
-export async function createDb(config: Pick<Config, "DATABASE_URL" | "DATABASE_SSL" | "DATA_DIR">, opts: { memory?: boolean } = {}): Promise<Db> {
-  if (config.DATABASE_URL) return createPgDb(config.DATABASE_URL, config.DATABASE_SSL === "require");
+export async function createDb(
+  config: Pick<Config, "DATABASE_URL" | "DATABASE_SSL" | "DATA_DIR"> & Partial<Pick<Config, "DATABASE_SCHEMA" | "DATABASE_POOL_MAX">>,
+  opts: { memory?: boolean } = {},
+): Promise<Db> {
+  if (config.DATABASE_URL) return createPgDb(config.DATABASE_URL, config.DATABASE_SSL === "require", config.DATABASE_SCHEMA, config.DATABASE_POOL_MAX ?? 10);
   const dir = opts.memory ? undefined : `${config.DATA_DIR}/pglite`;
   if (dir) mkdirSync(dir, { recursive: true });
   const { PGlite } = await import("@electric-sql/pglite"); // development/test only: never loaded in production
@@ -36,15 +39,22 @@ export async function createDb(config: Pick<Config, "DATABASE_URL" | "DATABASE_S
   };
 }
 
-function createPgDb(url: string, ssl: boolean): Db {
+function createPgDb(url: string, ssl: boolean, schema: string | undefined, max: number): Db {
   const pool = new pg.Pool({
     connectionString: url,
-    max: 10,
+    max,
     connectionTimeoutMillis: 5000,
     idleTimeoutMillis: 30000,
     statement_timeout: 15000,
     ssl: ssl ? { rejectUnauthorized: true } : undefined,
   });
+  // A dedicated schema (DATABASE_SCHEMA): every connection looks there first. Needs a session-level connection (Supabase's
+  // "Session pooler" or direct connection), because a transaction pooler would not keep the setting between statements.
+  if (schema) {
+    pool.on("connect", (client) => {
+      client.query(`CREATE SCHEMA IF NOT EXISTS "${schema}"; SET search_path TO "${schema}", public, extensions`).catch(() => undefined);
+    });
+  }
   pool.on("error", () => {
     /* idle client errors are surfaced on the next query */
   });
