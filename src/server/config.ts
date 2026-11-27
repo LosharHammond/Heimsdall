@@ -5,6 +5,9 @@ const schema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(8787),
   APP_URL: z.string().url().default("http://localhost:5173"),
   DATABASE_URL: z.string().optional(),
+  /** Optional session-pooler routing. Keeps the password in DATABASE_URL unchanged. Set both together. */
+  DATABASE_POOLER_HOST: z.string().regex(/^[a-z0-9.-]+$/).optional(),
+  DATABASE_POOLER_USER: z.string().min(1).optional(),
   DATABASE_SSL: z.enum(["require", "disable"]).optional(),
   /** Keep Heimdall's tables in their own Postgres schema, e.g. "heimdall" inside a shared Supabase project. Never "public" there:
    *  Supabase publishes the public schema through its REST API. */
@@ -47,6 +50,22 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new Error(`Invalid configuration: ${parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}`);
   }
   const c = parsed.data;
+  if (!!c.DATABASE_POOLER_HOST !== !!c.DATABASE_POOLER_USER) {
+    throw new Error("Set DATABASE_POOLER_HOST and DATABASE_POOLER_USER together.");
+  }
+  if (c.DATABASE_URL && c.DATABASE_POOLER_HOST && c.DATABASE_POOLER_USER) {
+    let url: URL;
+    try {
+      url = new URL(c.DATABASE_URL);
+      if (!["postgres:", "postgresql:"].includes(url.protocol)) throw new Error();
+    } catch {
+      throw new Error("DATABASE_URL must be a valid PostgreSQL URL.");
+    }
+    url.hostname = c.DATABASE_POOLER_HOST;
+    url.username = c.DATABASE_POOLER_USER;
+    url.port = "5432";
+    c.DATABASE_URL = url.toString();
+  }
   if (c.NODE_ENV === "production") {
     if (!c.DATABASE_URL) throw new Error("DATABASE_URL is required in production (embedded PGlite is for development only).");
     if (!c.APP_URL.startsWith("https://")) throw new Error("APP_URL must be https:// in production.");
