@@ -12,7 +12,7 @@ const key = (orgId: string) => `hd_device:${orgId}`;
 type Saved = { id: string } | { declinedAt: number };
 const REASK_MS = 7 * 24 * 3600_000;
 const read = (orgId: string): Saved | null => { try { return JSON.parse(localStorage.getItem(key(orgId)) ?? "null"); } catch { return null; } };
-const write = (orgId: string, v: Saved | null) => { try { v ? localStorage.setItem(key(orgId), JSON.stringify(v)) : localStorage.removeItem(key(orgId)); } catch { /* storage off */ } };
+const write = (orgId: string, v: Saved | null) => { try { v ? localStorage.setItem(key(orgId), JSON.stringify(v)) : localStorage.removeItem(key(orgId)); window.dispatchEvent(new Event("heimdall-browser-changed")); } catch { /* storage off */ } };
 
 export function describeBrowser(ua = navigator.userAgent): { label: string; platform: "windows" | "linux" | "macos" | "android" | "ios" | "other" } {
   const browser = /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera" : /Firefox\//.test(ua) ? "Firefox" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "Browser";
@@ -101,7 +101,12 @@ export function DevicePrompt() {
   const [saved, setSaved] = useState<Saved | null>(() => read(org.id));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  useEffect(() => setSaved(read(org.id)), [org.id]);
+  useEffect(() => {
+    const sync = () => setSaved(read(org.id));
+    sync();
+    window.addEventListener("heimdall-browser-changed", sync);
+    return () => window.removeEventListener("heimdall-browser-changed", sync);
+  }, [org.id]);
 
   // Added: check in now and every 2 minutes; if an admin removed it, forget it so the question comes back.
   const deviceId = saved && "id" in saved ? saved.id : null;
@@ -241,7 +246,12 @@ export function BrowserConnection() {
   const toast = useToast();
   const [saved, setSaved] = useState<Saved | null>(() => read(org.id));
   const [busy, setBusy] = useState(false);
-  useEffect(() => setSaved(read(org.id)), [org.id]);
+  useEffect(() => {
+    const sync = () => setSaved(read(org.id));
+    sync();
+    window.addEventListener("heimdall-browser-changed", sync);
+    return () => window.removeEventListener("heimdall-browser-changed", sync);
+  }, [org.id]);
   const add = async () => {
     setBusy(true);
     try {
