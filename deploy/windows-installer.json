@@ -1,0 +1,10 @@
+{
+  "file": "HeimdallSetup.exe",
+  "version": "0.1.0",
+  "url": "https://kenuxa-heimdall.vercel.app",
+  "platform": "win32",
+  "sha256": "98cf35e7f10ddfb973549daeeca8a734ff757ba0cd189cf827188cc90bcd83df",
+  "size": 88114176,
+  "built_at": "2026-11-28T13:20:40.479Z",
+  "download_url": "https://github.com/LosharHammond/Heimdall/releases/download/companion-15c902f48759/HeimdallSetup.exe"
+}
