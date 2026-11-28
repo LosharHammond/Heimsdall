@@ -49,7 +49,7 @@ export default function Protection() {
 
   return (
     <div className="stack">
-      <PageHeader title="Protection Center" subtitle="What is protected, how we know, and what is not. Each layer is separate: there is no overall “protected” badge." actions={can && <button onClick={() => setAdding(true)}>Add a device by hand</button>} />
+      <PageHeader title="Protection Center" subtitle="What is protected, how we know, and what is not. Each layer is separate: there is no overall “protected” badge." actions={can && <button onClick={() => setAdding(true)}>Advanced device enrollment</button>} />
       <BrowserConnection />
       <ProtectComputer />
       {can && <DeviceApproval />}
@@ -163,7 +163,7 @@ function AddDevice({ onClose, onCreated }: { onClose: () => void; onCreated: (r:
   return (
     <Modal title="Add a device" onClose={onClose}>
       <form className="form" onSubmit={async (e) => { e.preventDefault(); try { onCreated(await api("POST", `/api/orgs/${org.id}/devices`, { name, platform: "windows" })); } catch (x) { setErr(x as Error); } }}>
-        <p className="muted small" style={{ margin: 0 }}><strong>Easiest:</strong> on the computer, run <code>npm run companion -- --url {location.origin}</code>. It opens this dashboard with a code; an administrator clicks Add and the computer is protected from then on (it also starts at sign-in). Browsers are added by answering “Yes” to the prompt at the top of the dashboard.</p>
+        <p className="muted small" style={{ margin: 0 }}><strong>Recommended:</strong> close this dialog and use <strong>Download for Windows</strong> above. Open the setup to install and link this computer automatically.</p>
         <p className="muted small" style={{ margin: 0 }}>Or create a token below and enroll by hand. Windows only. The person who uses the computer runs a command on it; nothing is installed or inspected remotely. Optional telemetry (Windows Security status, process names) is off unless that person turns it on.</p>
         <Field label="Device name" hint="For example: Ama’s laptop" error={fieldErrors(err).name}><input required maxLength={120} value={name} onChange={(e) => setName(e.target.value)} /></Field>
         {err && !fieldErrors(err).name && <ErrorBox error={err} />}
@@ -179,18 +179,18 @@ function EnrollModal({ data, onClose }: { data: any; onClose: () => void }) {
   const live = useLoad<any>(`/api/orgs/${org.id}/devices/${data.id}`);
   useEffect(() => { const t = setInterval(live.reload, 3000); return () => clearInterval(t); }, [live.reload]);
   const enrolled = live.data && live.data.status === "active";
-  const cmd = `npm run companion -- enroll --url ${location.origin} --token ${data.enrollment_token} --startup`;
+  const cmd = `& "$env:LOCALAPPDATA\\Kenuxa Heimdall\\HeimdallCompanion.exe" enroll --url ${location.origin} --token ${data.enrollment_token} --startup`;
   return (
     <Modal title="Enroll the device" onClose={onClose}>
       <div className="stack">
         <div className={`alert ${enrolled ? "ok" : "info"}`} role="status" aria-live="polite">{enrolled ? <><strong>Enrolled.</strong> Waiting for heartbeats ({live.data.connection.label}).</> : <><span className="spinner" aria-hidden /> <strong>Waiting for the device to enroll…</strong></>}</div>
-        <p className="small muted" style={{ margin: 0 }}>Run this on the Windows computer, in the Heimdall project folder. The token works once and expires at <Time value={data.expires_at} />. It is shown only now.</p>
+        <p className="small muted" style={{ margin: 0 }}>Advanced setup only: install the Windows app first, then run this in PowerShell on that computer. The token works once and expires at <Time value={data.expires_at} />. It is shown only now.</p>
         <pre className="block" style={{ userSelect: "all" }}>{cmd}</pre>
         <div className="row"><button onClick={() => navigator.clipboard?.writeText(cmd).then(() => toast("Copied"), () => toast("Copy failed: select and copy manually"))}>Copy command</button></div>
         <ul className="small" style={{ margin: 0, paddingLeft: "1.1rem" }}>
           <li><code>--startup</code> starts the companion when <em>this user signs in</em>. Nothing runs before sign-in.</li>
           {data.signing_key_id && <li>Policy signing key id: <code>{data.signing_key_id}</code>. The companion prints the same id when it enrolls; they should match.</li>}
-          <li>To remove everything Heimdall added later: <code>npm run companion -- uninstall</code>.</li>
+          <li>To remove everything Heimdall added later: <code>&amp; "$env:LOCALAPPDATA\Kenuxa Heimdall\HeimdallCompanion.exe" uninstall</code>.</li>
         </ul>
         <div className="row" style={{ justifyContent: "flex-end" }}><button className="primary" onClick={onClose}>Done</button></div>
       </div>

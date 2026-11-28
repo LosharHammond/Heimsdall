@@ -118,7 +118,7 @@ export default function Live() {
           <strong>{watching ? `Watching ${guarded.length} AI ${guarded.length === 1 ? "tool" : "tools"} on ${online.length} ${online.length === 1 ? "computer" : "computers"}` : "Not watching any computer right now"}</strong>
           <p>{watching
             ? "Every action they try is checked against the rules below before it happens. New checks appear here within seconds."
-            : <>No computer with the Heimdall app has reported in the last 3 minutes. Start <code>START-HEIMDALL.bat</code> on the computer you want to protect.</>}</p>
+            : <>No computer with the Heimdall app has reported in the last 3 minutes. Open <a href="/protection">Protection Center</a>, download the Windows setup, and open it on the computer you want to protect.</>}</p>
         </div>
         <dl className="watch-stats">
           <div><dt>Checked, last hour</dt><dd>{data?.last_hour.checked ?? 0}</dd></div>
