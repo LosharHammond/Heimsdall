@@ -314,12 +314,16 @@ async function insertCompanionDevice(q: Q, orgId: string, baseName: string, plat
  * any code signature on it) is never modified. The app reads its own name on first start and adds the computer.
  */
 const installerDir = (ctx: Ctx) => ctx.installerDir ?? join(process.cwd(), "dist", "installer");
-function installerManifest(ctx: Ctx): { file: string; version: string; url: string; size: number; built_at: string } | null {
+function installerManifest(ctx: Ctx): { file: string; version: string; url: string; size: number; built_at: string; download_url?: string; sha256?: string } | null {
   const dir = installerDir(ctx);
   const mf = join(dir, "installer.json");
   if (!existsSync(mf)) return null;
   try {
     const m = JSON.parse(readFileSync(mf, "utf8"));
+    if (m.download_url) {
+      if (!/^https:\/\/github\.com\/LosharHammond\/Heimdall\/releases\/download\/[a-zA-Z0-9.-]+\/HeimdallSetup\.exe$/.test(m.download_url) || !/^[a-f0-9]{64}$/.test(m.sha256)) return null;
+      return { ...m, file: "", size: Number(m.size) };
+    }
     const file = join(dir, m.file);
     if (!existsSync(file)) return null;
     return { ...m, file, size: statSync(file).size };
@@ -345,14 +349,14 @@ export const INSTALL_TOKEN_RE = /^[0-9A-HJKMNP-TV-Z]{24}$/;
 /** "Protect this computer": a one-time code (15 minutes) for this person and organization, and where to download. */
 export async function createInstallToken(ctx: Ctx, userId: string, orgId: string) {
   await requireRole(ctx.db, userId, orgId, "viewer");
-  if (!installerManifest(ctx)) throw new HttpError(409, "INSTALLER_NOT_BUILT", "The Windows app has not been built on this server yet. An administrator runs `npm run build:installer` once (docs/DEVICES.md).");
+  if (!installerManifest(ctx)) throw new HttpError(409, "INSTALLER_NOT_BUILT", "The Windows download is being prepared. Please try again shortly.");
   const token = newInstallToken();
   const [r] = await ctx.db.query<{ expires_at: Date }>(
     "INSERT INTO device_install_tokens (token_hash, org_id, user_id, expires_at) VALUES ($1,$2,$3, now() + interval '15 minutes') RETURNING expires_at",
     [sha256(token), orgId, userId],
   );
   await audit(ctx.db, { orgId, actorType: "user", actorId: userId, action: "device.install_link_created", targetType: "organization", targetId: orgId, metadata: {} });
-  return { download_url: `/api/device-installs/${token}/download`, filename: `Heimdall-Setup-${token}.exe`, expires_at: r.expires_at };
+  return { download_url: `/api/device-installs/${token}/download`, filename: installerManifest(ctx)?.download_url ? "Heimdall-Setup.cmd" : `Heimdall-Setup-${token}.exe`, expires_at: r.expires_at };
 }
 
 /** Streams the installer under its tagged name. Only for the person who asked for it, while the code is unused. */
@@ -362,6 +366,12 @@ export async function downloadInstaller(ctx: Ctx, userId: string, token: string)
   if (!t || t.user_id !== userId || t.used_at || t.expires_at < new Date()) throw notFound("Download (it may have expired: click the button again)");
   const m = installerManifest(ctx);
   if (!m) throw new HttpError(409, "INSTALLER_NOT_BUILT", "The Windows app is not available on this server.");
+  if (m.download_url) {
+    // The download holds a short-lived, single-use claim code. The GitHub request receives no credentials.
+    const ps = `$ErrorActionPreference='Stop'; [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; $pkg=Join-Path $env:TEMP ('Heimdall-' + [guid]::NewGuid().ToString() + '.exe'); try { Invoke-WebRequest -UseBasicParsing -Uri '${m.download_url}' -OutFile $pkg; if ((Get-FileHash -LiteralPath $pkg -Algorithm SHA256).Hash.ToLower() -ne '${m.sha256}') { throw 'Installer verification failed. Please download again.' }; Start-Process -FilePath $pkg -ArgumentList @('--install-token','${token}') -Wait } catch { Write-Host $_.Exception.Message; Read-Host 'Press Enter to close'; exit 1 } finally { if (Test-Path -LiteralPath $pkg) { Remove-Item -LiteralPath $pkg -Force -ErrorAction SilentlyContinue } }`;
+    const script = `@echo off\r\necho Downloading and verifying Kenuxa Heimdall...\r\npowershell.exe -NoProfile -EncodedCommand ${Buffer.from(ps, "utf16le").toString("base64")}\r\n`;
+    return { script, filename: "Heimdall-Setup.cmd", size: Buffer.byteLength(script) };
+  }
   return { path: m.file, filename: `Heimdall-Setup-${token}.exe`, size: m.size };
 }
 

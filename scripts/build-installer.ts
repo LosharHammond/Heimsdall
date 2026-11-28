@@ -26,6 +26,7 @@ if (major < 20) throw new Error("Node.js 20 or newer is needed to build the app.
 
 const out = resolve("dist/installer");
 mkdirSync(out, { recursive: true });
+import { createHash } from "node:crypto";
 const bundle = join(out, "companion.cjs");
 const version = (readFileSync("src/companion/companion.ts", "utf8").match(/COMPANION_VERSION = "([^"]+)"/) ?? [])[1] ?? "0.0.0";
 
@@ -57,6 +58,6 @@ console.log("4/4 Injecting the app");
 const postject = resolve("node_modules/postject/dist/cli.js");
 execFileSync(process.execPath, [postject, exe, "NODE_SEA_BLOB", blob, "--sentinel-fuse", "NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2", ...(process.platform === "darwin" ? ["--macho-segment-name", "NODE_SEA"] : [])], { stdio: "inherit" });
 
-writeFileSync(join(out, "installer.json"), JSON.stringify({ file: exeName, version, url, platform: process.platform, built_at: new Date().toISOString() }, null, 2));
+writeFileSync(join(out, "installer.json"), JSON.stringify({ file: exeName, version, url, platform: process.platform, sha256: createHash("sha256").update(readFileSync(exe)).digest("hex"), size: readFileSync(exe).length, built_at: new Date().toISOString() }, null, 2));
 for (const f of [blob, seaConfig]) rmSync(f, { force: true });
 console.log(`Done: ${exe}\nThe dashboard now offers it under Protection Center > Protect this computer. Restart the server if it is running.`);

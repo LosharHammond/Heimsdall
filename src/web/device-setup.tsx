@@ -64,9 +64,9 @@ export function ProtectComputer({ compact, onDone }: { compact?: boolean; onDone
     <div className={compact ? "" : "card"} role="status">
       <strong>Open the downloaded file to finish.</strong>
       <ol className="small" style={{ margin: ".4rem 0 0", paddingLeft: "1.2rem" }}>
-        <li>Open <code>Heimdall-Setup-….exe</code> from your downloads (in the browser's download bar or the Downloads folder).</li>
-        <li>If Windows shows “Windows protected your PC”, choose <em>More info</em> → <em>Run anyway</em> (until the app is code-signed).</li>
-        <li>{info.approval_required ? "An administrator of your organization confirms the computer; then it starts protecting." : "That's all: the computer is added and protected, and Heimdall starts with Windows from now on."}</li>
+        <li>Open <code>Heimdall-Setup.cmd</code> from your downloads (in the browser's download bar or the Downloads folder).</li>
+        <li>The setup downloads the app from our GitHub release and verifies it before running. Follow any Windows confirmation prompts.</li>
+        <li>{info.approval_required ? "An administrator of your organization confirms the computer; then it starts protecting." : "The computer is added and Heimdall starts with Windows. Restart supported AI tools once, then check their individual protection status below."}</li>
       </ol>
       <div className="row" style={{ marginTop: ".6rem", gap: ".5rem" }}><button onClick={go}>Download again</button>{onDone && <button onClick={onDone}>Done</button>}</div>
     </div>
@@ -77,7 +77,7 @@ export function ProtectComputer({ compact, onDone }: { compact?: boolean; onDone
         <strong>Protect this computer too</strong>
         <div className="muted small">
           {!windows ? "The Heimdall app is for Windows. Open this page on the Windows computer you want to protect."
-            : !info.available ? "The Windows app has not been built on this server yet. An administrator runs npm run build:installer once."
+            : !info.available ? "The Windows download is being prepared. Reload this page shortly."
             : "Download the Heimdall app and open it. It adds this computer, finds the AI tools on it and protects them. Nothing to type."}
         </div>
         {error && <ErrorBox error={error} />}
@@ -234,4 +234,24 @@ export function PairPage() {
       </div>
     </>
   );
+}
+
+export function BrowserConnection() {
+  const { org } = useApp();
+  const toast = useToast();
+  const [saved, setSaved] = useState<Saved | null>(() => read(org.id));
+  const [busy, setBusy] = useState(false);
+  useEffect(() => setSaved(read(org.id)), [org.id]);
+  const add = async () => {
+    setBusy(true);
+    try {
+      const d = describeBrowser();
+      const r = await api<any>("POST", `/api/orgs/${org.id}/browser-devices`, { label: d.label, platform: d.platform });
+      write(org.id, { id: r.device.id }); setSaved({ id: r.device.id });
+      await enablePush(org.id, r.device.id, r.vapid_public_key);
+      toast("Browser linked for notifications. Computer protection requires the Windows companion.");
+    } catch (e) { toast((e as Error).message); }
+    finally { setBusy(false); }
+  };
+  return <div className="card"><h2>This browser</h2><p>{saved && "id" in saved ? "Registered for Heimdall notifications." : "Not registered for notifications."}</p><p className="muted small">Browser registration delivers alerts and approvals. Web conversations, browsing, and actions inside websites are not intercepted. Install the companion for supported local AI tools; their individual coverage is shown below.</p>{(!saved || !("id" in saved)) && <button disabled={busy} onClick={add}>Enable browser notifications</button>}</div>;
 }

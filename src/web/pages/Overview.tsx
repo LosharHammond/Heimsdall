@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
+import { ProtectComputer } from "../device-setup";
 import { useLoad } from "../api";
 import { DecisionChart, ReasonBars } from "../charts";
 import { Icon } from "../icons";
@@ -143,6 +144,7 @@ function Stat({ n, label, hint, link, icon, accent }: { n: number; label: string
 function ProtectionStatus() {
   const { org } = useApp();
   const d = useLoad<any>(`/api/orgs/${org.id}/discovered`);
+  useEffect(() => { const t = setInterval(d.reload, 10000); return () => clearInterval(t); }, [d.reload]);
   if (!d.data) return null;
   const items: any[] = d.data.items ?? [];
   const fresh = (t: string) => Date.now() - new Date(t).getTime() < 20 * 60_000;
@@ -157,14 +159,15 @@ function ProtectionStatus() {
     return (
       <div className="alert bad" role="status">
         <strong>Nothing is being blocked yet: no computer is protecting its AI tools.</strong>
-        <div style={{ marginTop: ".35rem" }}>Heimdall stops actions only on computers running the Heimdall app. On this computer, double-click <code>START-HEIMDALL.bat</code> in the Heimdall folder (or run <code>npm run companion</code>), then click <strong>Add</strong> when its code appears here. It then sets up Claude Desktop, Claude Code, Cursor and other AI tools to ask Heimdall before they act. Restart those apps once.</div>
+        <div style={{ marginTop: ".35rem" }}>Download and open the setup below. It installs the companion, links this computer, and starts it at Windows sign-in. No project folder or npm command is needed. Restart supported AI tools once after setup.</div>
+        <ProtectComputer compact />
       </div>
     );
   }
   if (stale.length && !protectedNow.length) {
     return (
       <div className="alert bad" role="status">
-        <strong>The Heimdall app stopped reporting from {devices.join(", ")}.</strong> Until it is running again those computers fall back to Standard protection on their own (keys, saved passwords and dangerous commands stay blocked; anything that needs approval is refused). Start <code>START-HEIMDALL.bat</code> again.
+        <strong>The Heimdall app stopped reporting from {devices.join(", ")}.</strong> Until it is running again those computers fall back to Standard protection on their own (keys, saved passwords and dangerous commands stay blocked; anything that needs approval is refused). Open the installed Heimdall app or download setup again from Protection Center.
       </div>
     );
   }

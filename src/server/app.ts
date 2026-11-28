@@ -336,6 +336,10 @@ export function createApp(ctx: Ctx, opts: AppOptions = {}) {
   app.put(org("/device-settings"), needUser, async (c) => c.json(await setup.setDeviceSettings(ctx, uid(c), oid(c), await json(c, setup.deviceSettingsSchema))));
   app.get("/api/device-installs/:token/download", needUser, async (c) => {
     const f = await setup.downloadInstaller(ctx, uid(c), pid(c, "token"));
+    if ("script" in f) return new Response(f.script, { headers: {
+      "content-type": "application/octet-stream", "content-disposition": `attachment; filename="${f.filename}"`,
+      "cache-control": "no-store", "x-content-type-options": "nosniff",
+    } });
     const body = Readable.toWeb(createReadStream(f.path)) as unknown as ReadableStream;
     return new Response(body, { headers: {
       "content-type": "application/vnd.microsoft.portable-executable", "content-length": String(f.size),

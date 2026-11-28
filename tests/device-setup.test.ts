@@ -5,7 +5,7 @@ import { raiseAlert, type Ctx } from "../src/server/services/core.js";
 import { dispatchPushes, resetVapidCache } from "../src/server/services/device-setup.js";
 import { sweepDevices } from "../src/server/services/devices.js";
 import { installTokenFromPath, pairDevice, PairingError } from "../src/companion/pairing.js";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { makeEnv, makeWorld, newReqId, newUser, Session, v1, type Env } from "./helpers.js";
@@ -245,6 +245,27 @@ describe("one-click install from the browser", () => {
     const again = await env.app.request("/v1/device/install/claim", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ install_token: token, device_name: "X", platform: "windows", companion_version: "0.1.0" }) });
     expect(again.status).toBe(410);
     expect((await viewer.api("GET", t.body.download_url)).status).toBe(404);
+  });
+
+  it("Vercel downloads carry a one-time code and verify the immutable release checksum", async () => {
+    const manifestPath = join(ctx.installerDir!, "installer.json");
+    const original = readFileSync(manifestPath, "utf8");
+    try {
+      writeFileSync(manifestPath, JSON.stringify({version:"0.1.0",url:"https://kenuxa-heimdall.vercel.app",size:123,
+        built_at:new Date().toISOString(), download_url:"https://github.com/LosharHammond/Heimdall/releases/download/companion-123/HeimdallSetup.exe",sha256:"a".repeat(64)}));
+      const w = await makeWorld(env); const owner = as(w.owner);
+      const t = await owner.api("POST", `/api/orgs/${w.orgId}/device-installs`);
+      expect(t.status).toBe(201);
+      expect(t.body.filename).toBe("Heimdall-Setup.cmd");
+      const dl = await env.app.request(t.body.download_url, {headers:{cookie:owner.cookie}});
+      expect(dl.status).toBe(200); expect(dl.headers.get("cache-control")).toBe("no-store");
+      const script = await dl.text();
+      const encoded = script.match(/-EncodedCommand ([A-Za-z0-9+/=]+)/)![1];
+      const ps = Buffer.from(encoded,"base64").toString("utf16le");
+      expect(ps).toContain("Get-FileHash"); expect(ps).toContain("a".repeat(64));
+      expect(ps).toContain("--install-token"); expect(ps).toContain(t.body.download_url.split("/")[3]);
+      expect(ps).not.toContain("ExecutionPolicy");
+    } finally { writeFileSync(manifestPath, original); }
   });
 
   it("when the organization requires approval, the app waits for an administrator instead", async () => {

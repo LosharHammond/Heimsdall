@@ -27,7 +27,7 @@ function boot() {
     setLogLevel(config.LOG_LEVEL);
     const db = await createDb(config);
     const signer = loadSigner(config);
-    const ctx: Ctx = { db, config, signer };
+    const ctx: Ctx = { db, config, signer, installerDir: process.cwd() + "/installer" };
     try {
       await upgradeAllLegacyAutoPolicies(db);
     } catch (e) {

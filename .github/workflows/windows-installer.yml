@@ -1,0 +1,52 @@
+name: Windows companion release
+on:
+  push:
+    branches: [main]
+    paths: ['src/companion/**', 'src/executor/**', 'src/shared/**', 'scripts/build-installer.ts', '.github/workflows/windows-installer.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: windows-companion-release
+  cancel-in-progress: false
+jobs:
+  package:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --include=dev
+      - run: npm run typecheck
+      - run: npm test -- --pool threads --maxWorkers 2
+      - run: npm run build:installer -- --url https://kenuxa-heimdall.vercel.app
+      - name: Test the actual packaged executable
+        shell: pwsh
+        run: |
+          $output = & ./dist/installer/HeimdallSetup.exe selftest
+          if ($LASTEXITCODE -ne 0) { throw 'Packaged self-test failed to run' }
+          $result = ($output -join "`n") | ConvertFrom-Json
+          if ($result.passed -ne $true -or $result.checks.Count -lt 7) { throw 'Packaged enforcement checks did not pass' }
+          $output | Out-File -Encoding utf8 dist/installer/selftest.json
+      - name: Publish tested executable and record its checksum
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = 'companion-' + $env:GITHUB_SHA.Substring(0,12)
+          gh release create $tag ./dist/installer/HeimdallSetup.exe ./dist/installer/selftest.json --title "Windows companion $tag" --notes 'Windows companion with packaged enforcement self-test. Download from Protection Center for automatic account linking.'
+          if ($LASTEXITCODE -ne 0) { throw 'Could not publish the installer' }
+          git pull --rebase origin main
+          if ($LASTEXITCODE -ne 0) { throw 'Could not update main before recording the manifest' }
+          $manifest = Get-Content dist/installer/installer.json -Raw | ConvertFrom-Json
+          $manifest | Add-Member -NotePropertyName download_url -NotePropertyValue "https://github.com/LosharHammond/Heimdall/releases/download/$tag/HeimdallSetup.exe"
+          $manifest | ConvertTo-Json | Set-Content -Encoding utf8 deploy/windows-installer.json
+          git config user.name 'heimdall-release'
+          git config user.email 'heimdall-release@users.noreply.github.com'
+          git add deploy/windows-installer.json
+          git commit -m "Publish verified Windows companion $tag"
+          git push origin HEAD:main
+          if ($LASTEXITCODE -ne 0) { throw 'Could not publish the download manifest' }

@@ -7,7 +7,7 @@
  *   npm run build:vercel
  */
 import { execSync } from "node:child_process";
-import { cpSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { build } from "esbuild";
 
 const out = ".vercel/output";
@@ -33,6 +33,10 @@ await build({
   logLevel: "info",
 });
 cpSync("migrations", `${fn}/migrations`, { recursive: true });
+if (existsSync("deploy/windows-installer.json")) {
+  mkdirSync(`${fn}/installer`, { recursive: true });
+  cpSync("deploy/windows-installer.json", `${fn}/installer/installer.json`);
+}
 writeFileSync(`${fn}/package.json`, JSON.stringify({ type: "module" }));
 writeFileSync(
   `${fn}/.vc-config.json`,

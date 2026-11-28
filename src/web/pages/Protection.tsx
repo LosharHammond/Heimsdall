@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { api, useLoad } from "../api";
 import { Icon } from "../icons";
 import { disableBrowserNotifications, enableBrowserNotifications, browserNotifState } from "../notifier";
-import { ProtectComputer } from "../device-setup";
+import { BrowserConnection, ProtectComputer } from "../device-setup";
 import { Discovered } from "./Discovered";
 import { Badge, Confirm, Empty, ErrorBox, Field, Loading, Modal, PageHeader, Time, fieldErrors, useApp, useCan, useToast } from "../ui";
 
@@ -50,6 +50,7 @@ export default function Protection() {
   return (
     <div className="stack">
       <PageHeader title="Protection Center" subtitle="What is protected, how we know, and what is not. Each layer is separate: there is no overall “protected” badge." actions={can && <button onClick={() => setAdding(true)}>Add a device by hand</button>} />
+      <BrowserConnection />
       <ProtectComputer />
       {can && <DeviceApproval />}
       <Discovered />
