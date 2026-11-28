@@ -56,7 +56,9 @@ New-ItemProperty -Path $k -Name ShowInSettings -Value 1 -PropertyType DWord -For
 
   // ---- startup (user sign-in only) ----
   setRunKey(command: string): PsResult {
-    return this.ps(`New-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name ${q(this.runValue)} -Value ${q(command)} -PropertyType String -Force | Out-Null`);
+    return this.ps(`$key = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'
+if (-not (Test-Path -LiteralPath $key)) { New-Item -Path $key -Force | Out-Null }
+New-ItemProperty -Path $key -Name ${q(this.runValue)} -Value ${q(command)} -PropertyType String -Force | Out-Null`);
   }
   removeRunKey(): PsResult {
     return this.ps(`Remove-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name ${q(this.runValue)} -ErrorAction SilentlyContinue`);
