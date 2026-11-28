@@ -54,3 +54,10 @@ In the dashboard, **Devices > Add device** gives each PC its setup link as befor
   run every 30 minutes instead of every 15 seconds and 5 minutes.
 - The Windows installer download from the dashboard is not hosted on Vercel; use `START-HEIMDALL.bat` or `npm run build:installer` locally.
 - Locally nothing changed: `START-HEIMDALL.bat` and `npm run dev` still use the built-in database and run every job in the background.
+
+
+## Many users at once (thousands)
+Use Supabase's **Transaction pooler** (port 6543) instead of the session pooler, and add `DATABASE_POOL_MODE=transaction`
+to Vercel's environment variables. Heimdall then sets its schema inside every transaction, so a handful of database
+connections serve every Vercel instance. Keep `DATABASE_POOL_MAX` at 3. Rate limits are per instance and per key.
+Optional: `BROWSER_GUARD_WEBSTORE_URL` once the browser extension is in the Chrome Web Store (docs/BROWSER-GUARD.md).

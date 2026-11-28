@@ -20,6 +20,7 @@ import * as notify from "./services/notify.js";
 import * as exporter from "./services/export.js";
 import * as setup from "./services/device-setup.js";
 import * as discovery from "./services/discovery.js";
+import * as browserGuard from "./services/browser-guard.js";
 import { runWithSession, type SessionInfo } from "./session-context.js";
 import * as authz from "./services/authz.js";
 import * as queries from "./services/queries.js";
@@ -331,6 +332,8 @@ export function createApp(ctx: Ctx, opts: AppOptions = {}) {
   app.post("/api/device-pairings/decide", needUser, async (c) => c.json(await setup.decidePairing(ctx, uid(c), await json(c, setup.pairDecisionSchema))));
   app.get(org("/discovered"), needUser, async (c) => c.json(await discovery.listDiscovered(ctx, uid(c), oid(c))));
   app.put(org("/auto-protect"), needUser, async (c) => c.json(await discovery.setAutoProtect(ctx, uid(c), oid(c), await json(c, discovery.autoProtectSchema))));
+  app.get(org("/browser-guard"), needUser, async (c) => c.json(await browserGuard.status(ctx, uid(c), oid(c))));
+  app.post(org("/browser-guard"), needUser, async (c) => c.json(await browserGuard.connect(ctx, uid(c), oid(c), await json(c, browserGuard.connectSchema)), 201));
   app.get(org("/installer"), needUser, async (c) => c.json(await setup.installerInfo(ctx, uid(c), oid(c))));
   app.post(org("/device-installs"), needUser, async (c) => c.json(await setup.createInstallToken(ctx, uid(c), oid(c)), 201));
   app.put(org("/device-settings"), needUser, async (c) => c.json(await setup.setDeviceSettings(ctx, uid(c), oid(c), await json(c, setup.deviceSettingsSchema))));

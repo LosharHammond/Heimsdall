@@ -17,3 +17,4 @@ Claude outputs/
 !.env.example
 __pycache__/
 .pytest_cache/
+src/web/public/downloads/

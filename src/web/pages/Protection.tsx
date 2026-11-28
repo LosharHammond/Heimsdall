@@ -3,9 +3,10 @@ import { Link } from "react-router";
 import { api, useLoad } from "../api";
 import { Icon } from "../icons";
 import { disableBrowserNotifications, enableBrowserNotifications, browserNotifState } from "../notifier";
-import { BrowserConnection, ProtectComputer } from "../device-setup";
+import { BrowserConnection } from "../device-setup";
+import { ProtectionHero } from "../protection-hero";
 import { Discovered } from "./Discovered";
-import { Badge, Confirm, Empty, ErrorBox, Field, Loading, Modal, PageHeader, Time, fieldErrors, useApp, useCan, useToast } from "../ui";
+import { Badge, Confirm, Empty, ErrorBox, Field, Loading, Modal, Time, fieldErrors, useApp, useCan, useToast } from "../ui";
 
 const STATUS: Record<string, { label: string; tone?: "ok" | "info" | "warn" | "bad" | "demo"; icon: string; help: string }> = {
   enforcing: { label: "Enforcing", tone: "ok", icon: "shield", help: "A running component is actively preventing or permitting the covered actions." },
@@ -49,11 +50,14 @@ export default function Protection() {
 
   return (
     <div className="stack">
-      <PageHeader title="Protection Center" subtitle="What is protected, how we know, and what is not. Each layer is separate: there is no overall “protected” badge." actions={can && <button onClick={() => setAdding(true)}>Advanced device enrollment</button>} />
-      <BrowserConnection />
-      <ProtectComputer />
+      <ProtectionHero />
       {can && <DeviceApproval />}
       <Discovered />
+      <BrowserConnection />
+      <div className="row between" style={{ marginTop: ".5rem" }}>
+        <h2 style={{ margin: 0 }}>Technical details</h2>
+        {can && <button onClick={() => setAdding(true)}>Advanced device enrollment</button>}
+      </div>
       <ErrorBox error={p.error} retry={p.reload} />
       {p.loading && !p.data ? <Loading kind="dashboard" /> : p.data && (
         <>

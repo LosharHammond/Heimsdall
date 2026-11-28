@@ -17,10 +17,11 @@ export interface Env {
 
 export async function makeEnv(): Promise<Env> {
   const url = process.env.TEST_DATABASE_URL;
-  const config = loadConfig({ NODE_ENV: "test", LOG_LEVEL: "error", ...(url ? { DATABASE_URL: url } : {}) } as NodeJS.ProcessEnv);
+  const schema = url ? process.env.TEST_DATABASE_SCHEMA : undefined;   // e.g. with DATABASE_POOL_MODE=transaction
+  const config = loadConfig({ NODE_ENV: "test", LOG_LEVEL: "error", ...(url ? { DATABASE_URL: url } : {}), ...(schema ? { DATABASE_SCHEMA: schema } : {}) } as NodeJS.ProcessEnv);
   setLogLevel(config.LOG_LEVEL);
   const db = await createDb(config, { memory: true });
-  if (url) await db.exec("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
+  if (url) await db.exec(schema ? `DROP SCHEMA IF EXISTS "${schema}" CASCADE; CREATE SCHEMA "${schema}";` : "DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
   await runMigrations(db);
   const signer = loadSigner(config, { ephemeral: true });
   const app = createApp({ db, config, signer }, { ipLimitsMultiplier: 1000 });

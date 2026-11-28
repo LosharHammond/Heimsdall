@@ -12,6 +12,7 @@ import { build } from "esbuild";
 
 const out = ".vercel/output";
 rmSync(out, { recursive: true, force: true });
+execSync("npx tsx scripts/build-extension.ts", { stdio: "inherit" });
 execSync("npx vite build", { stdio: "inherit" });
 
 mkdirSync(`${out}/static`, { recursive: true });

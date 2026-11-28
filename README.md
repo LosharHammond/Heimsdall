@@ -40,6 +40,13 @@ Sign in with **Google** (set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`) or *
 Heimdall once with `KENUXA ACCOUNTS/supabase/migrations/0004_heimdall_sourcebook.sql`). The nine-dot menu next to the logo
 opens the other Kenuxa apps.
 
+## Protecting AI chats in the browser
+
+The **Heimdall browser extension** (Chrome, Edge, Brave, Opera) stops passwords, API keys, private keys and card numbers
+from being pasted or sent into ChatGPT, Claude, Gemini, Copilot and other AI chats, and asks an administrator before lists
+of personal data are shared. The text is checked on the computer and never sent to Heimdall. Overview → *AI chats in your
+browser*. Details: [docs/BROWSER-GUARD.md](docs/BROWSER-GUARD.md).
+
 ## Quick start (local, no external services)
 
 Requirements: Node.js 22+. In development the app uses an embedded PostgreSQL (PGlite) stored in `.data/`, so you do

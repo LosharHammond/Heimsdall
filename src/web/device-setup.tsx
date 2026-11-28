@@ -4,7 +4,7 @@
  * Also the /pair page, where an administrator confirms the companion app on a computer.
  */
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router";
+import { useSearchParams, useNavigate, useLocation } from "react-router";
 import { api, ApiError } from "./api";
 import { useApp, useToast, ErrorBox, PageHeader, Spinner, Badge, Field } from "./ui";
 
@@ -97,6 +97,7 @@ function useLoadInfo(orgId: string) {
 /** Banner on every page until answered; keeps an added browser checked in while the dashboard is open. */
 export function DevicePrompt() {
   const { org } = useApp();
+  const onProtection = useLocation().pathname.startsWith("/protection");
   const toast = useToast();
   const [saved, setSaved] = useState<Saved | null>(() => read(org.id));
   const [busy, setBusy] = useState(false);
@@ -127,7 +128,8 @@ export function DevicePrompt() {
   }, [deviceId, org.id]);
 
   const [followUp, setFollowUp] = useState(false);
-  const show = !saved || ("declinedAt" in saved && Date.now() - saved.declinedAt > REASK_MS);
+  // Only asked on Protection Center: everywhere else it got in the way of the page people came for.
+  const show = onProtection && (!saved || ("declinedAt" in saved && Date.now() - saved.declinedAt > REASK_MS));
   if (followUp) return <div className="card device-prompt" style={{ marginBottom: "1rem" }}><ProtectComputer compact onDone={() => setFollowUp(false)} /></div>;
   if (!show) return null;
 

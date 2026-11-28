@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
-import { ProtectComputer } from "../device-setup";
+import { ProtectionHero } from "../protection-hero";
 import { useLoad } from "../api";
 import { DecisionChart, ReasonBars } from "../charts";
 import { Icon } from "../icons";
@@ -14,41 +14,26 @@ export default function Overview() {
   const d = data;
   return (
     <div className="stack">
-      <section className="hero">
-        <div className="row between" style={{ alignItems: "flex-start" }}>
-          <div>
-            <h1>{org.name}</h1>
-            <p>Every figure here is counted from recorded events. Nothing is estimated, scored or invented.</p>
-          </div>
-          <label className="small">
-            Period
-            <select value={hours} onChange={(e) => setHours(Number(e.target.value))} aria-label="Period">
-              <option value={24}>Last 24 hours</option><option value={168}>Last 7 days</option><option value={720}>Last 30 days</option>
-            </select>
-          </label>
-        </div>
-        {d && (
-          <div className="row" style={{ marginTop: "1rem", gap: ".5rem" }}>
-            <span className="pill"><span className="dot" />{d.agents.by_state.enforcing} enforcing through adapter</span>
-            <span className="pill"><span className="dot" style={{ color: "#93c5fd" }} />{d.agents.by_state.connected + d.agents.by_state.monitoring + d.agents.by_state.reporting_only} connected, not enforcing</span>
-            <span className="pill"><span className="dot" style={{ color: "#94a3b8" }} />{d.agents.by_state.not_connected} not connected</span>
-            {d.pending_approvals > 0 && <Link to="/approvals" className="pill warn" style={{ textDecoration: "none" }}><span className="dot" />{d.pending_approvals} waiting for approval</Link>}
-          </div>
-        )}
-      </section>
-      <ProtectionStatus />
+      <ProtectionHero />
+      <div className="row between section-bar">
+        <h2>Activity <span className="muted small" style={{ fontWeight: 500 }}>· counted from recorded events</span></h2>
+        <label className="small row" style={{ gap: ".5rem" }}>
+          Period
+          <select value={hours} onChange={(e) => setHours(Number(e.target.value))} aria-label="Period">
+            <option value={24}>Last 24 hours</option><option value={168}>Last 7 days</option><option value={720}>Last 30 days</option>
+          </select>
+        </label>
+      </div>
+      {d && d.pending_approvals > 0 && <Link to="/approvals" className="alert warn" style={{ textDecoration: "none", color: "inherit" }}><strong>{d.pending_approvals} {d.pending_approvals === 1 ? "action is" : "actions are"} waiting for your approval.</strong> Review →</Link>}
       <ErrorBox error={error} retry={reload} />
       {loading && !d && <Loading kind="dashboard" />}
       {d && (
         <>
-          {d.agents.total === 0 && (
-            <div className="alert info"><strong>Start here.</strong> <Link to="/agents">Register your first agent</Link>, assign it a <Link to="/policies">policy</Link>, then connect it with the SDK and an integration key.</div>
-          )}
           <div className="grid cols-4" aria-label={`Decisions in the ${label}`}>
-            <Stat icon="check" accent="var(--c-allow)" n={d.decisions.allowed} label="Allowed decisions" hint="Policy permitted the action. It does not mean it ran." />
-            <Stat icon="ban" accent="var(--c-deny)" n={d.decisions.denied} label="Denied decisions" hint="Policy refused the action." />
-            <Stat icon="clock" accent="var(--c-appr)" n={d.decisions.needs_approval} label="Sent for approval" hint="A human had to decide." />
-            <Stat icon="shield" accent="var(--brand)" n={d.executions.blocked_confirmed} label="Blocks confirmed by executor" hint="The adapter confirmed it did not run the action." />
+            <Stat icon="check" accent="var(--c-allow)" n={d.decisions.allowed} label="Allowed" hint="Policy permitted the action." />
+            <Stat icon="ban" accent="var(--c-deny)" n={d.decisions.denied} label="Blocked" hint="Policy refused the action." />
+            <Stat icon="clock" accent="var(--c-appr)" n={d.decisions.needs_approval} label="Sent for approval" hint="A person decided." />
+            <Stat icon="shield" accent="var(--brand)" n={d.executions.blocked_confirmed} label="Confirmed stopped" hint="The protected tool confirmed it did not run." />
           </div>
           <div className="grid cols-4">
             <Stat icon="approvals" accent="var(--c-appr)" n={d.pending_approvals} label="Pending approvals" link={d.pending_approvals ? "/approvals" : undefined} hint="Waiting for a human decision now." />
@@ -137,45 +122,3 @@ function Stat({ n, label, hint, link, icon, accent }: { n: number; label: string
 }
 
 
-/**
- * The first question anyone has: is anything actually being stopped right now? Heimdall only stops actions on computers where
- * the Heimdall app is running and has set the AI tools up to ask it first. Say so plainly.
- */
-function ProtectionStatus() {
-  const { org } = useApp();
-  const d = useLoad<any>(`/api/orgs/${org.id}/discovered`);
-  useEffect(() => { const t = setInterval(d.reload, 10000); return () => clearInterval(t); }, [d.reload]);
-  if (!d.data) return null;
-  const items: any[] = d.data.items ?? [];
-  const fresh = (t: string) => Date.now() - new Date(t).getTime() < 20 * 60_000;
-  const protectedNow = items.filter((t) => t.protection === "protected" && fresh(t.last_seen_at));
-  const restart = items.filter((t) => t.protection === "restart_needed");
-  const stale = items.filter((t) => t.protectable && !fresh(t.last_seen_at));
-  const devices = [...new Set(items.map((t) => t.device_name))];
-  if (!d.data.auto_protect) {
-    return <div className="alert warn"><strong>Automatic protection is off.</strong> AI tools on your computers are not being checked. Turn it on in <Link to="/protection">Protection Center</Link>.</div>;
-  }
-  if (!items.length) {
-    return (
-      <div className="alert bad" role="status">
-        <strong>Nothing is being blocked yet: no computer is protecting its AI tools.</strong>
-        <div style={{ marginTop: ".35rem" }}>Download and open the setup below. It installs the companion, links this computer, and starts it at Windows sign-in. No project folder or npm command is needed. Restart supported AI tools once after setup.</div>
-        <ProtectComputer compact />
-      </div>
-    );
-  }
-  if (stale.length && !protectedNow.length) {
-    return (
-      <div className="alert bad" role="status">
-        <strong>The Heimdall app stopped reporting from {devices.join(", ")}.</strong> Until it is running again those computers fall back to Standard protection on their own (keys, saved passwords and dangerous commands stay blocked; anything that needs approval is refused). Open the installed Heimdall app or download setup again from Protection Center.
-      </div>
-    );
-  }
-  return (
-    <div className={`alert ${restart.length ? "warn" : "ok"}`} role="status">
-      <strong>{protectedNow.length} AI {protectedNow.length === 1 ? "tool is" : "tools are"} protected on {devices.length} {devices.length === 1 ? "computer" : "computers"}.</strong>{" "}
-      {restart.length ? <>Restart {restart.map((t) => t.product).join(", ")} once to finish protecting {restart.length === 1 ? "it" : "them"}. </> : null}
-      <Link to="/live">Watch it live</Link> · <Link to="/protection">See what was found</Link>
-    </div>
-  );
-}

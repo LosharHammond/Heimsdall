@@ -88,10 +88,25 @@ function createPgDb(url: string, ssl: boolean, schema: string | undefined, max: 
   pool.on("error", () => {
     /* idle client errors are surfaced on the next query */
   });
+  // Supabase's transaction pooler (port 6543) shares a few database connections between thousands of visitors, but forgets
+  // session settings between transactions. DATABASE_POOL_MODE=transaction sets the schema inside every transaction instead.
+  const perTx = schema && process.env.DATABASE_POOL_MODE === "transaction" ? `SET LOCAL search_path TO "${schema}", public, extensions` : "";
   return {
     kind: "pg",
     async query<T>(sql: string, params: unknown[] = []) {
-      return (await pool.query(sql, params as any[])).rows as T[];
+      if (!perTx) return (await pool.query(sql, params as any[])).rows as T[];
+      const client = await pool.connect();
+      try {
+        await client.query(`BEGIN; ${perTx}`);
+        const rows = (await client.query(sql, params as any[])).rows as T[];
+        await client.query("COMMIT");
+        return rows;
+      } catch (e) {
+        await client.query("ROLLBACK").catch(() => undefined);
+        throw e;
+      } finally {
+        client.release();
+      }
     },
     async exec(sql) {
       await pool.query(sql);
@@ -99,7 +114,7 @@ function createPgDb(url: string, ssl: boolean, schema: string | undefined, max: 
     async tx(fn) {
       const client = await pool.connect();
       try {
-        await client.query("BEGIN");
+        await client.query(perTx ? `BEGIN; ${perTx}` : "BEGIN");
         const r = await fn({ query: async (sql, params = []) => (await client.query(sql, params as any[])).rows as any });
         await client.query("COMMIT");
         return r;
