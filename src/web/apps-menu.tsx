@@ -1,22 +1,22 @@
 /** The Kenuxa app menu (nine dots), the same list Kenuxa Accounts and Bask show. */
 import { useEffect, useRef, useState, type ReactElement } from "react";
 
-interface KxApp { client_id: string; name: string; home_url: string; icon_url: string | null }
+import { KENUXA_APPS, mergeKenuxaApps, type KenuxaApp as KxApp } from "../shared/kenuxa-apps";
 
 const MARKS: Record<string, ReactElement> = {
   bask: <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><path d="M8.8 3.4L23 9L8.8 14.6Z" fill="#f5a524" stroke="#f5a524" strokeWidth="1.6" strokeLinejoin="round" /><path d="M8.8 17.6L23 23.2L8.8 28.8Z" fill="#d9831a" stroke="#d9831a" strokeWidth="1.6" strokeLinejoin="round" /></svg>,
   heimdall: <img src="/heimdall.svg" alt="" />,
   sourcebook: <svg width="40" height="40" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#1F2547" /><path d="M9 8h10a4 4 0 0 1 4 4v12H13a4 4 0 0 1-4-4z" fill="none" stroke="#E0B23D" strokeWidth="2.2" strokeLinejoin="round" /><path d="M13 13h6M13 17h6" stroke="#F3F4F8" strokeWidth="2" strokeLinecap="round" /></svg>,
 };
-const short = (a: KxApp) => (a.client_id === "accounts" ? "Account" : a.name.replace(/^Kenuxa\s+/i, ""));
+const short = (a: KxApp) => (a.client_id === "accounts" ? "Accounts" : a.name.replace(/^Kenuxa\s+/i, ""));
 
 export function AppsMenu() {
   const [open, setOpen] = useState(false);
-  const [apps, setApps] = useState<KxApp[] | null>(null);
+  const [apps, setApps] = useState<KxApp[]>(KENUXA_APPS);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (open && !apps) fetch("/api/kenuxa/apps").then((r) => r.json()).then(setApps, () => setApps([]));
-  }, [open, apps]);
+    if (open) fetch("/api/kenuxa/apps").then((r) => r.ok ? r.json() : []).then((value) => setApps(mergeKenuxaApps(value)), () => setApps(KENUXA_APPS));
+  }, [open]);
   useEffect(() => {
     if (!open) return;
     const down = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };

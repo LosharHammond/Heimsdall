@@ -1,3 +1,4 @@
+import { KENUXA_APPS, mergeKenuxaApps } from "../shared/kenuxa-apps.js";
 import { createReadStream } from "node:fs";
 import { timingSafeEqual } from "node:crypto";
 import { Readable } from "node:stream";
@@ -540,12 +541,7 @@ function safeEqual(a: string, b: string) {
 }
 
 
-const FALLBACK_APPS = [
-  { client_id: "accounts", name: "Kenuxa Accounts", home_url: "https://kenuxa-accounts.vercel.app", icon_url: null },
-  { client_id: "bask", name: "Kenuxa Bask", home_url: "https://kenuxabask.vercel.app", icon_url: null },
-  { client_id: "heimdall", name: "Kenuxa Heimdall", home_url: "/", icon_url: null },
-  { client_id: "sourcebook", name: "Kenuxa Sourcebook", home_url: "https://kenuxa-sourcebook.vercel.app", icon_url: null },
-];
+const FALLBACK_APPS = KENUXA_APPS;
 let appsCache: { at: number; apps: unknown[] } = { at: 0, apps: [] };
 async function kenuxaApps(ctx: Ctx) {
   const f: typeof fetch = (ctx as any).fetch ?? fetch;
@@ -562,6 +558,7 @@ async function kenuxaApps(ctx: Ctx) {
       if (Array.isArray(j) && j.length) apps = j;
     } catch { /* offline: the built-in list */ }
   }
+  apps = mergeKenuxaApps(apps);
   appsCache = { at: Date.now(), apps };
   return apps;
 }

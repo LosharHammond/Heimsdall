@@ -87,7 +87,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
 
 /** Public values shared by every Kenuxa app (browser-safe: the Supabase anon key, never a service key). */
 export const KENUXA_PUBLIC = {
-  accounts: "https://kenuxa-accounts.vercel.app",
+  accounts: "https://kenuxaaccounts.vercel.app",
   supabase: "https://mshhfieupbayynxpowit.supabase.co",
   anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zaGhmaWV1cGJheXlueHBvd2l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzNzg0NjYsImV4cCI6MjEwNjk1NDQ2Nn0.F5x5I4bJGu6s14dYPf_rW4kwGhYuPkWOj40LtzwAFgk",
 };
